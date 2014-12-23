@@ -20,7 +20,6 @@
  */
 
 #import "APPPrinter.h"
-#import <Cordova/CDVAvailability.h>
 
 @interface APPPrinter ()
 
@@ -59,23 +58,23 @@
  */
 - (void) print:(CDVInvokedUrlCommand*)command
 {
-    if (!self.isPrintingAvailable) {
-        return;
-    }
+		if (!self.isPrintingAvailable) {
+			return;
+		}
 
-    _callbackId = command.callbackId;
+		_callbackId = command.callbackId;
 
-    NSArray*  arguments           = [command arguments];
-    NSString* content             = [arguments objectAtIndex:0];
-    NSMutableDictionary* settings = [arguments objectAtIndex:1];
+		NSArray*  arguments           = [command arguments];
+		NSString* content             = [arguments objectAtIndex:0];
+		NSMutableDictionary* settings = [arguments objectAtIndex:1];
 
-    UIPrintInteractionController* controller = [self printController];
-
-    CGRect rect = [self convertIntoRect:[settings objectForKey:@"bounds"]];
-
-    [self adjustPrintController:controller withSettings:settings];
-    [self loadContent:content intoPrintController:controller];
-    [self presentPrintController:controller fromRect:rect];
+		UIPrintInteractionController* controller = [self printController];
+		controller_global = controller;
+		NSLog(@"termino la funcion");
+		[self adjustPrintController:controller withSettings:settings];
+		[self loadContent:content intoPrintController:controller];
+		if (!is_url)
+			[self presentPrintController:controller];
 }
 
 /**
@@ -155,24 +154,27 @@
  */
 - (void) loadContent:(NSString*)content intoPrintController:(UIPrintInteractionController*)controller
 {
-    UIWebView* page               = [[UIWebView alloc] init];
+	page_global = [[UIWebView alloc] init];
+	page_global.delegate = self;
     UIPrintPageRenderer* renderer = [[UIPrintPageRenderer alloc] init];
 
-    [self adjustWebView:page andPrintPageRenderer:renderer];
+    [self adjustWebView:page_global andPrintPageRenderer:renderer];
 
     if ([NSURL URLWithString:content]) {
         NSURL *url = [NSURL URLWithString:content];
+		is_url = TRUE;
 
-        [page loadRequest:[NSURLRequest requestWithURL:url]];
+        [page_global loadRequest:[NSURLRequest requestWithURL:url]];
     }
     else {
         // Set the base URL to be the www directory.
         NSString* wwwFilePath = [[NSBundle mainBundle] pathForResource:@"www"
                                                                 ofType:nil];
         NSURL* baseURL        = [NSURL fileURLWithPath:wwwFilePath];
+		is_url = FALSE;
 
 
-        [page loadHTMLString:content baseURL:baseURL];
+        [page_global loadHTMLString:content baseURL:baseURL];
     }
 
     controller.printPageRenderer = renderer;
@@ -186,45 +188,16 @@
  *      The prepared print controller with a content
  */
 - (void) presentPrintController:(UIPrintInteractionController*)controller
-                       fromRect:(CGRect)rect
 {
-    if(CDV_IsIPad()) {
-        [controller presentFromRect:rect inView:self.webView animated:YES completionHandler:
-         ^(UIPrintInteractionController *ctrl, BOOL ok, NSError *e) {
-             CDVPluginResult* pluginResult =
-             [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+NSLog(@"present printer");
+    [controller presentAnimated:YES completionHandler:
+     ^(UIPrintInteractionController *ctrl, BOOL ok, NSError *e) {
+        CDVPluginResult* pluginResult =
+        [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];NSLog(@"ok controlerr");
 
-             [self.commandDelegate sendPluginResult:pluginResult
-                                         callbackId:_callbackId];
-         }];
-    }
-    else {
-        [controller presentAnimated:YES completionHandler:
-         ^(UIPrintInteractionController *ctrl, BOOL ok, NSError *e) {
-             CDVPluginResult* pluginResult =
-             [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-
-             [self.commandDelegate sendPluginResult:pluginResult
-                                         callbackId:_callbackId];
-         }];
-    }
-}
-
-/**
- * Convert Array into Rect object.
- *
- * @param bounds
- *      The bounds
- *
- * @return
- *      A converted Rect object
- */
-- (CGRect) convertIntoRect:(NSArray*)bounds
-{
-    return CGRectMake([[bounds objectAtIndex:0] floatValue],
-                      [[bounds objectAtIndex:1] floatValue],
-                      [[bounds objectAtIndex:2] floatValue],
-                      [[bounds objectAtIndex:3] floatValue]);
+        [self.commandDelegate sendPluginResult:pluginResult
+                                    callbackId:_callbackId];
+    }];
 }
 
 /**
@@ -242,6 +215,12 @@
 
     return [self printController] && [UIPrintInteractionController
                                       isPrintingAvailable];
+}
+
+- (void) webViewDidFinishLoad:(UIWebView *)webView {
+	NSLog(@"termino de cargar la pagina");
+	if (is_url)
+		[self presentPrintController:controller_global];
 }
 
 @end

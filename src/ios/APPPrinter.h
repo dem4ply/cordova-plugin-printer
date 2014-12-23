@@ -23,7 +23,11 @@
 #import <Cordova/CDVPlugin.h>
 
 
-@interface APPPrinter : CDVPlugin
+@interface APPPrinter : CDVPlugin <UIWebViewDelegate> {
+	UIWebView* page_global;
+	UIPrintInteractionController* controller_global;
+	BOOL is_url;
+}
 
 // Prints the content
 - (void) print:(CDVInvokedUrlCommand*)command;
@@ -31,3 +35,4 @@
 - (void) isAvailable:(CDVInvokedUrlCommand*)command;
 
 @end
+

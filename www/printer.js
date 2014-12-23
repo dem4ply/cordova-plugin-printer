@@ -34,7 +34,7 @@ exports.DEFAULT_DOC_NAME = 'unknown';
 exports.getDefaults = function () {
     return {
         name:      exports.DEFAULT_DOC_NAME,
-        duplex:    true,
+        duplex:    false,
         landscape: false,
         bounds:    [40, 30, 0, 0]
     };
