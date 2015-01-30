@@ -1,6 +1,6 @@
 /*
  Copyright 2013-2014 appPlant UG
-
+ 
  Licensed to the Apache Software Foundation (ASF) under one
  or more contributor license agreements.  See the NOTICE file
  distributed with this work for additional information
@@ -8,9 +8,9 @@
  to you under the Apache License, Version 2.0 (the
  "License"); you may not use this file except in compliance
  with the License.  You may obtain a copy of the License at
-
+ 
  http://www.apache.org/licenses/LICENSE-2.0
-
+ 
  Unless required by applicable law or agreed to in writing,
  software distributed under the License is distributed on an
  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -39,16 +39,16 @@
  */
 - (void) isAvailable:(CDVInvokedUrlCommand*)command
 {
-    [self.commandDelegate runInBackground:^{
-        CDVPluginResult* pluginResult;
-        BOOL isAvailable = [self isPrintingAvailable];
-
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
-                                           messageAsBool:isAvailable];
-
-        [self.commandDelegate sendPluginResult:pluginResult
-                                    callbackId:command.callbackId];
-    }];
+	[self.commandDelegate runInBackground:^{
+		CDVPluginResult* pluginResult;
+		BOOL isAvailable = [self isPrintingAvailable];
+		
+		pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+										   messageAsBool:isAvailable];
+		
+		[self.commandDelegate sendPluginResult:pluginResult
+									callbackId:command.callbackId];
+	}];
 }
 
 /**
@@ -59,23 +59,26 @@
  */
 - (void) print:(CDVInvokedUrlCommand*)command
 {
-    if (!self.isPrintingAvailable) {
-        return;
-    }
-
-    _callbackId = command.callbackId;
-
-    NSArray*  arguments           = [command arguments];
-    NSString* content             = [arguments objectAtIndex:0];
-    NSMutableDictionary* settings = [arguments objectAtIndex:1];
-
-    UIPrintInteractionController* controller = [self printController];
-
-    CGRect rect = [self convertIntoRect:[settings objectForKey:@"bounds"]];
-
-    [self adjustPrintController:controller withSettings:settings];
-    [self loadContent:content intoPrintController:controller];
-    [self presentPrintController:controller fromRect:rect];
+	if (!self.isPrintingAvailable) {
+		return;
+	}
+	
+	_callbackId = command.callbackId;
+	
+	NSArray*  arguments           = [command arguments];
+	NSString* content             = [arguments objectAtIndex:0];
+	NSMutableDictionary* settings = [arguments objectAtIndex:1];
+	
+	UIPrintInteractionController* controller = [self printController];
+	
+	CGRect rect = [self convertIntoRect:[settings objectForKey:@"bounds"]];
+	global_rect = rect;
+	controller_global = controller;
+	[self adjustPrintController:controller withSettings:settings];
+	[self loadContent:content intoPrintController:controller];
+	if (!is_url)
+		[self presentPrintController:controller fromRect:rect];
+	
 }
 
 /**
@@ -85,7 +88,7 @@
  */
 - (UIPrintInteractionController*) printController
 {
-    return [UIPrintInteractionController sharedPrintController];
+	return [UIPrintInteractionController sharedPrintController];
 }
 
 /**
@@ -98,51 +101,51 @@
  *      The modified print controller instance
  */
 - (UIPrintInteractionController*) adjustPrintController:(UIPrintInteractionController*)controller
-                                           withSettings:(NSMutableDictionary*)settings
+										   withSettings:(NSMutableDictionary*)settings
 {
-    UIPrintInfo* printInfo             = [UIPrintInfo printInfo];
-    UIPrintInfoOrientation orientation = UIPrintInfoOrientationPortrait;
-    UIPrintInfoOutputType outputType   = UIPrintInfoOutputGeneral;
-
-    if ([[settings objectForKey:@"landscape"] boolValue]) {
-        orientation = UIPrintInfoOrientationLandscape;
-    }
-
-    if ([[settings objectForKey:@"graystyle"] boolValue]) {
-        outputType = UIPrintInfoOutputGrayscale;
-    }
-
-    printInfo.outputType  = outputType;
-    printInfo.orientation = orientation;
-    printInfo.jobName     = [settings objectForKey:@"name"];
-    printInfo.duplex      = [[settings objectForKey:@"duplex"] boolValue];
-    printInfo.printerID   = [settings objectForKey:@"printerId"];
-
-    controller.printInfo      = printInfo;
-    controller.showsPageRange = NO;
-
-    return controller;
+	UIPrintInfo* printInfo             = [UIPrintInfo printInfo];
+	UIPrintInfoOrientation orientation = UIPrintInfoOrientationPortrait;
+	UIPrintInfoOutputType outputType   = UIPrintInfoOutputGeneral;
+	
+	if ([[settings objectForKey:@"landscape"] boolValue]) {
+		orientation = UIPrintInfoOrientationLandscape;
+	}
+	
+	if ([[settings objectForKey:@"graystyle"] boolValue]) {
+		outputType = UIPrintInfoOutputGrayscale;
+	}
+	
+	printInfo.outputType  = outputType;
+	printInfo.orientation = orientation;
+	printInfo.jobName     = [settings objectForKey:@"name"];
+	printInfo.duplex      = [[settings objectForKey:@"duplex"] boolValue];
+	printInfo.printerID   = [settings objectForKey:@"printerId"];
+	
+	controller.printInfo      = printInfo;
+	controller.showsPageRange = NO;
+	
+	return controller;
 }
 
 /**
  * Adjusts the web view and page renderer.
  */
 - (void) adjustWebView:(UIWebView*)page
-     andPrintPageRenderer:(UIPrintPageRenderer*)renderer
+  andPrintPageRenderer:(UIPrintPageRenderer*)renderer
 {
-    UIViewPrintFormatter* formatter = [page viewPrintFormatter];
-    // margin not required - done in web page
-    formatter.contentInsets = UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, 0.0f);
-
-    renderer.headerHeight = -30.0f;
-    renderer.footerHeight = -30.0f;
-    [renderer addPrintFormatter:formatter startingAtPageAtIndex:0];
-
-    page.scalesPageToFit        = YES;
-    page.dataDetectorTypes      = UIDataDetectorTypeNone;
-    page.userInteractionEnabled = NO;
-    page.autoresizingMask       = (UIViewAutoresizingFlexibleWidth |
-                                   UIViewAutoresizingFlexibleHeight);
+	UIViewPrintFormatter* formatter = [page viewPrintFormatter];
+	// margin not required - done in web page
+	formatter.contentInsets = UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, 0.0f);
+	
+	renderer.headerHeight = -30.0f;
+	renderer.footerHeight = -30.0f;
+	[renderer addPrintFormatter:formatter startingAtPageAtIndex:0];
+	
+	page.scalesPageToFit        = YES;
+	page.dataDetectorTypes      = UIDataDetectorTypeNone;
+	page.userInteractionEnabled = NO;
+	page.autoresizingMask       = (UIViewAutoresizingFlexibleWidth |
+								   UIViewAutoresizingFlexibleHeight);
 }
 
 /**
@@ -155,27 +158,31 @@
  */
 - (void) loadContent:(NSString*)content intoPrintController:(UIPrintInteractionController*)controller
 {
-    UIWebView* page               = [[UIWebView alloc] init];
-    UIPrintPageRenderer* renderer = [[UIPrintPageRenderer alloc] init];
-
-    [self adjustWebView:page andPrintPageRenderer:renderer];
-
-    if ([NSURL URLWithString:content]) {
-        NSURL *url = [NSURL URLWithString:content];
-
-        [page loadRequest:[NSURLRequest requestWithURL:url]];
-    }
-    else {
-        // Set the base URL to be the www directory.
-        NSString* wwwFilePath = [[NSBundle mainBundle] pathForResource:@"www"
-                                                                ofType:nil];
-        NSURL* baseURL        = [NSURL fileURLWithPath:wwwFilePath];
-
-
-        [page loadHTMLString:content baseURL:baseURL];
-    }
-
-    controller.printPageRenderer = renderer;
+	UIPrintPageRenderer* renderer = [[UIPrintPageRenderer alloc] init];
+	page_global = [[UIWebView alloc] init];
+	page_global.delegate = self;
+	
+	
+	[self adjustWebView:page_global andPrintPageRenderer:renderer];
+	
+	if ([NSURL URLWithString:content]) {
+		is_url = TRUE;
+		NSURL *url = [NSURL URLWithString:content];
+		
+		[page_global loadRequest:[NSURLRequest requestWithURL:url]];
+	}
+	else {
+		// Set the base URL to be the www directory.
+		is_url = FALSE;
+		NSString* wwwFilePath = [[NSBundle mainBundle] pathForResource:@"www"
+																ofType:nil];
+		NSURL* baseURL        = [NSURL fileURLWithPath:wwwFilePath];
+		
+		
+		[page_global loadHTMLString:content baseURL:baseURL];
+	}
+	
+	controller.printPageRenderer = renderer;
 }
 
 /**
@@ -186,28 +193,28 @@
  *      The prepared print controller with a content
  */
 - (void) presentPrintController:(UIPrintInteractionController*)controller
-                       fromRect:(CGRect)rect
+					   fromRect:(CGRect)rect
 {
-    if(CDV_IsIPad()) {
-        [controller presentFromRect:rect inView:self.webView animated:YES completionHandler:
-         ^(UIPrintInteractionController *ctrl, BOOL ok, NSError *e) {
-             CDVPluginResult* pluginResult =
-             [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-
-             [self.commandDelegate sendPluginResult:pluginResult
-                                         callbackId:_callbackId];
-         }];
-    }
-    else {
-        [controller presentAnimated:YES completionHandler:
-         ^(UIPrintInteractionController *ctrl, BOOL ok, NSError *e) {
-             CDVPluginResult* pluginResult =
-             [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-
-             [self.commandDelegate sendPluginResult:pluginResult
-                                         callbackId:_callbackId];
-         }];
-    }
+	if(CDV_IsIPad()) {
+		[controller presentFromRect:rect inView:self.webView animated:YES completionHandler:
+		 ^(UIPrintInteractionController *ctrl, BOOL ok, NSError *e) {
+			 CDVPluginResult* pluginResult =
+			 [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+			 
+			 [self.commandDelegate sendPluginResult:pluginResult
+										 callbackId:_callbackId];
+		 }];
+	}
+	else {
+		[controller presentAnimated:YES completionHandler:
+		 ^(UIPrintInteractionController *ctrl, BOOL ok, NSError *e) {
+			 CDVPluginResult* pluginResult =
+			 [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+			 
+			 [self.commandDelegate sendPluginResult:pluginResult
+										 callbackId:_callbackId];
+		 }];
+	}
 }
 
 /**
@@ -221,10 +228,10 @@
  */
 - (CGRect) convertIntoRect:(NSArray*)bounds
 {
-    return CGRectMake([[bounds objectAtIndex:0] floatValue],
-                      [[bounds objectAtIndex:1] floatValue],
-                      [[bounds objectAtIndex:2] floatValue],
-                      [[bounds objectAtIndex:3] floatValue]);
+	return CGRectMake([[bounds objectAtIndex:0] floatValue],
+					  [[bounds objectAtIndex:1] floatValue],
+					  [[bounds objectAtIndex:2] floatValue],
+					  [[bounds objectAtIndex:3] floatValue]);
 }
 
 /**
@@ -234,14 +241,29 @@
  */
 - (BOOL) isPrintingAvailable
 {
-    Class controllerCls = NSClassFromString(@"UIPrintInteractionController");
-
-    if (!controllerCls) {
-        return NO;
-    }
-
-    return [self printController] && [UIPrintInteractionController
-                                      isPrintingAvailable];
+	Class controllerCls = NSClassFromString(@"UIPrintInteractionController");
+	
+	if (!controllerCls) {
+		return NO;
+	}
+	
+	return [self printController] && [UIPrintInteractionController
+									  isPrintingAvailable];
 }
+
+- (void) webViewDidFinishLoad:(UIWebView *)webView {
+	if (is_url)
+		[self presentPrintController:controller_global fromRect:global_rect];
+}
+
+- (void) webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error {
+	CDVPluginResult* pluginResult =
+	[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+					  messageAsString:error.localizedDescription];
+	
+	[self.commandDelegate sendPluginResult:pluginResult
+								callbackId:_callbackId];
+}
+
 
 @end
